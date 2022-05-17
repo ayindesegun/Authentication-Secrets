@@ -6,6 +6,8 @@ const { default: mongoose } = require('mongoose')
 const session = require('express-session')
 const passport = require('passport')
 const passportLocalMongoose = require('passport-local-mongoose')
+const GoogleStrategy = require('passport-google-oauth2').Strategy
+const findOrCreate = require('mongoose-findorcreate')
 
 const app = express()
 
@@ -35,17 +37,66 @@ const userSchema = new mongoose.Schema({
 })
 
 userSchema.plugin(passportLocalMongoose)
+userSchema.plugin(findOrCreate)
 
 const User = new mongoose.model('User', userSchema)
 
 passport.use(User.createStrategy())
 
-passport.serializeUser(User.serializeUser())
-passport.deserializeUser(User.deserializeUser())
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+ 
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: 'http://localhost:3000/auth/google/secrets',
+      passReqToCallback: true,
+    },
+    function (request, accessToken, refreshToken, profile, done) {
+      console.log(profile)
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        return done(err, user)
+      })
+    }
+  )
+)
+
+/* passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: 'https://locahost:3000/auth/google/secrets',
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      console.log(profile)
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        return cb(err, user)
+      })
+    }
+  )
+) */
 
 app.get('/', (req, res) => {
   res.render('home')
 })
+
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }))
+
+app.get(
+  '/auth/google/secrets',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  function (req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/secrets')
+  }
+)
 
 app.get('/login', (req, res) => {
   res.render('login')
@@ -83,14 +134,13 @@ app.post('/register', async (req, res) => {
   })
 })
 
-
 app.post('/login', (req, res) => {
   const user = new User({
     username: req.body.username,
-    password: req.body.password
+    password: req.body.password,
   })
   req.login(user, (err) => {
-    if (err){
+    if (err) {
       console.log(err)
     } else {
       passport.authenticate('local')(req, res, function () {
@@ -99,7 +149,6 @@ app.post('/login', (req, res) => {
     }
   })
 })
-
 
 app.listen(3000, () => {
   console.log('Server starting on port 3000')
