@@ -34,6 +34,7 @@ app.use(
 const userSchema = new mongoose.Schema({
   username: String,
   password: String,
+  googleId: String,
 })
 
 userSchema.plugin(passportLocalMongoose)
@@ -43,13 +44,13 @@ const User = new mongoose.model('User', userSchema)
 
 passport.use(User.createStrategy())
 
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
- 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
+passport.serializeUser(function (user, done) {
+  done(null, user)
+})
+
+passport.deserializeUser(function (user, done) {
+  done(null, user)
+})
 passport.use(
   new GoogleStrategy(
     {
