@@ -23,7 +23,7 @@ app.use(
 app.use(passport.initialize())
 app.use(passport.session())
 
-mongoose.connect('mongodb://localhost:27017/userDB')
+mongoose.connect(process.env.MONGO_API)
 app.use(express.static('public'))
 app.set('view engine', 'ejs')
 app.use(
@@ -60,11 +60,10 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3000/auth/google/secrets',
+      callbackURL: 'https://syrasecrets.herokuapp.com/auth/google/secrets',
       passReqToCallback: true,
     },
     function (request, accessToken, refreshToken, profile, done) {
-      //console.log(profile)
       User.findOrCreate({ googleId: profile.id }, function (err, user) {
         return done(err, user)
       })
@@ -76,31 +75,15 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_CLIENT_ID,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3000/auth/facebook/secrets',
+      callbackURL: 'https://syrasecrets.herokuapp.com/auth/facebook/secrets',
     },
     function (accessToken, refreshToken, profile, cb) {
-      console.log(profile)
       User.findOrCreate({ facebookId: profile.id }, function (err, user) {
         return cb(err, user)
       })
     }
   )
 )
-/* passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      callbackURL: 'https://locahost:3000/auth/google/secrets',
-    },
-    function (accessToken, refreshToken, profile, cb) {
-      console.log(profile)
-      User.findOrCreate({ googleId: profile.id }, function (err, user) {
-        return cb(err, user)
-      })
-    }
-  )
-) */
 
 app.get('/', (req, res) => {
   res.render('home')
@@ -108,10 +91,7 @@ app.get('/', (req, res) => {
 
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }))
 
-app.get(
-  '/auth/facebook',
-  passport.authenticate('facebook' /* ,{ scope:['profile'] } */)
-)
+app.get('/auth/facebook', passport.authenticate('facebook'))
 
 app.get(
   '/auth/facebook/secrets',
@@ -211,6 +191,10 @@ app.post('/submit', (req, res) => {
   })
 })
 
-app.listen(3000, () => {
-  console.log('Server starting on port 3000')
+let port = process.env.PORT
+if (port == null || '') {
+  port = 3000
+}
+app.listen(port, () => {
+  console.log('Server has started succesfully')
 })
