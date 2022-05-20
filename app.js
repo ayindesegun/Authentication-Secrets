@@ -8,6 +8,7 @@ const passport = require('passport')
 const passportLocalMongoose = require('passport-local-mongoose')
 const GoogleStrategy = require('passport-google-oauth2').Strategy
 const findOrCreate = require('mongoose-findorcreate')
+const FacebookStrategy = require('passport-facebook').Strategy
 
 const app = express()
 
@@ -35,6 +36,8 @@ const userSchema = new mongoose.Schema({
   username: String,
   password: String,
   googleId: String,
+  facebookId: String,
+  secret: String,
 })
 
 userSchema.plugin(passportLocalMongoose)
@@ -51,6 +54,7 @@ passport.serializeUser(function (user, done) {
 passport.deserializeUser(function (user, done) {
   done(null, user)
 })
+
 passport.use(
   new GoogleStrategy(
     {
@@ -60,14 +64,28 @@ passport.use(
       passReqToCallback: true,
     },
     function (request, accessToken, refreshToken, profile, done) {
-      console.log(profile)
+      //console.log(profile)
       User.findOrCreate({ googleId: profile.id }, function (err, user) {
         return done(err, user)
       })
     }
   )
 )
-
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+      callbackURL: 'http://localhost:3000/auth/facebook/secrets',
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      console.log(profile)
+      User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        return cb(err, user)
+      })
+    }
+  )
+)
 /* passport.use(
   new GoogleStrategy(
     {
@@ -91,6 +109,20 @@ app.get('/', (req, res) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }))
 
 app.get(
+  '/auth/facebook',
+  passport.authenticate('facebook' /* ,{ scope:['profile'] } */)
+)
+
+app.get(
+  '/auth/facebook/secrets',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  function (req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/secrets')
+  }
+)
+
+app.get(
   '/auth/google/secrets',
   passport.authenticate('google', { failureRedirect: '/login' }),
   function (req, res) {
@@ -108,8 +140,20 @@ app.get('/register', (req, res) => {
 })
 
 app.get('/secrets', (req, res) => {
+  User.find({ secrets: { $ne: null } }, (err, foundUsers) => {
+    if (err) {
+      console.log(err)
+    } else {
+      if (foundUsers) {
+        res.render('secrets', { foundUsers: foundUsers })
+      }
+    }
+  })
+})
+
+app.get('/submit', (req, res) => {
   if (req.isAuthenticated()) {
-    res.render('secrets')
+    res.render('submit')
   } else {
     res.redirect('/login')
   }
@@ -147,6 +191,22 @@ app.post('/login', (req, res) => {
       passport.authenticate('local')(req, res, function () {
         res.redirect('/secrets')
       })
+    }
+  })
+})
+
+app.post('/submit', (req, res) => {
+  const submittedSecrets = req.body.secret
+  User.findById(req.user._id, (err, foundUser) => {
+    if (err) {
+      console.log(err)
+    } else {
+      if (foundUser) {
+        foundUser.secret = submittedSecrets
+        foundUser.save(() => {
+          res.redirect('/secrets')
+        })
+      }
     }
   })
 })
