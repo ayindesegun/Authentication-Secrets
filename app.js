@@ -10,7 +10,7 @@ const GoogleStrategy = require('passport-google-oauth2').Strategy
 const findOrCreate = require('mongoose-findorcreate')
 const FacebookStrategy = require('passport-facebook').Strategy
 
-const app = express()
+const app = express('mongodb+srv://admin-segun:ayinseg@cluster0.gebxu.mongodb.net/userDB')
 
 app.use(
   session({
@@ -23,7 +23,7 @@ app.use(
 app.use(passport.initialize())
 app.use(passport.session())
 
-mongoose.connect(process.env.MONGO_API)
+mongoose.connect()
 app.use(express.static('public'))
 app.set('view engine', 'ejs')
 app.use(
@@ -93,14 +93,12 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }))
 
 app.get('/auth/facebook', passport.authenticate('facebook'))
 
-app.get(
-  '/auth/facebook/secrets',
+app.get('/auth/facebook/secrets',
   passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function (req, res) {
+  function(req, res) {
     // Successful authentication, redirect home.
-    res.redirect('/secrets')
-  }
-)
+    res.redirect('/secrets');
+  });
 
 app.get(
   '/auth/google/secrets',
@@ -110,14 +108,7 @@ app.get(
     res.redirect('/secrets')
   }
 )
-app.get(
-  '/auth/facebook/secrets',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function (req, res) {
-    // Successful authentication, redirect home.
-    res.redirect('/secrets')
-  }
-)
+
 
 app.get('/login', (req, res) => {
   res.render('login')
