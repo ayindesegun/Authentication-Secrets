@@ -23,7 +23,7 @@ app.use(
 app.use(passport.initialize())
 app.use(passport.session())
 
-mongoose.connect(MONGO_API)
+mongoose.connect(process.env.MONGO_API)
 app.use(express.static('public'))
 app.set('view engine', 'ejs')
 app.use(
@@ -58,8 +58,8 @@ passport.deserializeUser(function (user, done) {
 passport.use(
   new GoogleStrategy(
     {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: 'https://syrasecrets.herokuapp.com/auth/google/secrets',
       passReqToCallback: true,
     },
@@ -73,8 +73,8 @@ passport.use(
 passport.use(
   new FacebookStrategy(
     {
-      clientID: FACEBOOK_CLIENT_ID,
-      clientSecret: FACEBOOK_CLIENT_SECRET,
+      clientID: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
       callbackURL: 'https://syrasecrets.herokuapp.com/auth/facebook/secrets',
     },
     function (accessToken, refreshToken, profile, cb) {
