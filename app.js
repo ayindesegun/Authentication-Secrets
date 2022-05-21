@@ -10,7 +10,7 @@ const GoogleStrategy = require('passport-google-oauth2').Strategy
 const findOrCreate = require('mongoose-findorcreate')
 const FacebookStrategy = require('passport-facebook').Strategy
 
-const app = express('mongodb+srv://admin-segun:ayinseg@cluster0.gebxu.mongodb.net/userDB')
+const app = express()
 
 app.use(
   session({
@@ -23,7 +23,7 @@ app.use(
 app.use(passport.initialize())
 app.use(passport.session())
 
-mongoose.connect()
+mongoose.connect('mongodb+srv://admin-segun:ayinseg@cluster0.gebxu.mongodb.net/userDB')
 app.use(express.static('public'))
 app.set('view engine', 'ejs')
 app.use(
